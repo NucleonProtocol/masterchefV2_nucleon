@@ -379,7 +379,7 @@ interface IMasterChef {
     struct PoolInfo {
         IERC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. SUSHI to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that SUSHI distribution occurs.
+        uint256 lastRewardTime;  // Last block timestamp that SUSHI distribution occurs.
         uint256 accSushiPerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
 
@@ -412,9 +412,24 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// Also known as the amount of SUSHI to distribute per block.
     struct PoolInfo {
         uint128 accSushiPerShare;
-        uint64 lastRewardBlock;
+        uint64 lastRewardTime;
         uint64 allocPoint;
     }
+
+    /// @notice Emission point
+    struct EmissionPoint {
+        uint128 startTimeOffset;
+        uint128 rewardsPerSecond;
+    }
+
+    /// @notice Emission set
+    EmissionPoint[] public emissionSchedule;
+    /// @notice current reward speed
+    uint256 public rewardsPerSecond;
+    /// @notice total transferrable tokens
+    uint256 public immutable maxTransferrableTokens;
+    /// @notice tokens already transferred
+    uint256 public transferredTokens;
 
     /// @notice Address of SUSHI contract.
     IERC20 public immutable SUSHI;
@@ -450,20 +465,53 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     event Harvest(address indexed user, uint256 indexed pid, uint256 amount);
     event LogPoolAddition(uint256 indexed pid, uint256 allocPoint, IERC20 indexed lpToken, IRewarder indexed rewarder);
     event LogSetPool(uint256 indexed pid, uint256 allocPoint, IRewarder indexed rewarder, bool overwrite);
-    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardBlock, uint256 lpSupply, uint256 accSushiPerShare);
+    event LogUpdatePool(uint256 indexed pid, uint64 lastRewardTime, uint256 lpSupply, uint256 accSushiPerShare);
     event LogInit();
 
     // @param _MASTER_CHEF The SushiSwap MCV1 contract address.
     /// @param _sushi The SUSHI token contract address.
     // @param _MASTER_PID The pool ID of the dummy token on the base MCV1 contract.
-    constructor( IERC20 _sushi,uint256 _startTimestamp) public {//IMasterChef _MASTER_CHEF, uint256 _MASTER_PID
+    /// @param _startTimeOffset offset for each emission
+    /// @param _rewardsPerSecond set of each speed
+    constructor( 
+        IERC20 _sushi,
+        uint256 _startTimestamp, 
+        uint128[] memory _startTimeOffset,
+        uint128[] memory _rewardsPerSecond,
+        uint256 _maxTransferrableTokens
+        ) public {//IMasterChef _MASTER_CHEF, uint256 _MASTER_PID
         // MASTER_CHEF = _MASTER_CHEF;
         SUSHI = _sushi;
         startTimestamp = _startTimestamp;
         startDistributingTimestamp = _startTimestamp + 604800;
         // MASTER_PID = _MASTER_PID;
+        uint256 length = _startTimeOffset.length;
+        for (uint256 i = length - 1; i + 1 != 0; i--) {
+        emissionSchedule.push(
+            EmissionPoint({ startTimeOffset: _startTimeOffset[i], rewardsPerSecond: _rewardsPerSecond[i] })
+        );
+        }
+        maxTransferrableTokens = _maxTransferrableTokens;
     }
-
+    /// @notice update emissions
+    function _updateEmissions() internal {
+        uint256 length = emissionSchedule.length;
+        if (startTimestamp > 0 && length > 0) {
+        EmissionPoint memory e = emissionSchedule[length - 1];
+        if (block.timestamp.sub(startTimestamp) > e.startTimeOffset) {
+            _massUpdateAllPools();
+            rewardsPerSecond = uint256(e.rewardsPerSecond);
+            emissionSchedule.pop();
+        }
+        }
+    }
+    /// @notice update all pools
+    function _massUpdateAllPools() internal {
+        uint256 length = lpToken.length;
+        for (uint256 i = 0; i < length; ++i) {
+            updatePool(i);
+        }
+    }
     /// @notice Returns the number of MCV2 pools.
     function poolLength() public view returns (uint256 pools) {
         pools = poolInfo.length;
@@ -475,14 +523,15 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param _lpToken Address of the LP ERC-20 token.
     /// @param _rewarder Address of the rewarder delegate.
     function add(uint256 allocPoint, IERC20 _lpToken, IRewarder _rewarder) public onlyOwner {
-        uint256 lastRewardBlock = block.number;
+        _updateEmissions();
+        uint256 lastRewardTime = block.timestamp;
         totalAllocPoint = totalAllocPoint.add(allocPoint);
         lpToken.push(_lpToken);
         rewarder.push(_rewarder);
         PoolLPSum.push(0);
         poolInfo.push(PoolInfo({
             allocPoint: allocPoint.to64(),
-            lastRewardBlock: lastRewardBlock.to64(),
+            lastRewardTime: lastRewardTime.to64(),
             accSushiPerShare: 0
         }));
         
@@ -528,14 +577,13 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accSushiPerShare = pool.accSushiPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 blocks = block.number.sub(pool.lastRewardBlock);
-            uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+        if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
+            uint256 blocks = block.number.sub(pool.lastRewardTime);
+            uint256 sushiReward = blocks.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
             accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply);
         }
         pending = int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt).toUInt256();
     }
-
     /// @notice Update reward variables for all pools. Be careful of gas spending!
     /// @param pids Pool IDs of all to be updated. Make sure to update all active pools.
     function massUpdatePools(uint256[] calldata pids) external {
@@ -545,37 +593,22 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         }
     }
 
-    /// @notice Calculates and returns the `amount` of SUSHI per block.
-    function sushiPerBlock() public view returns (uint256 amount) {
-        if(block.timestamp <= startTimestamp){
-            amount = 0;
-        }
-        else if(block.timestamp <= startTimestamp + 126144000){
-          amount = 0.001415 ether;
-        }
-        else{
-            amount = 0;
-        }
-        // amount = uint256(MASTERCHEF_SUSHI_PER_BLOCK)
-        //     .mul(MASTER_CHEF.poolInfo(MASTER_PID).allocPoint) / MASTER_CHEF.totalAllocPoint();
-    }
-
     /// @notice Update reward variables of the given pool.
     /// @param pid The index of the pool. See `poolInfo`.
     /// @return pool Returns the pool that was updated.
     function updatePool(uint256 pid) public returns (PoolInfo memory pool) {
         pool = poolInfo[pid];
-        if (block.number > pool.lastRewardBlock) {
+        if (block.timestamp > pool.lastRewardTime) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             if (lpSupply > 0) {
-                uint256 blocks = block.number.sub(pool.lastRewardBlock);
-                uint256 sushiReward = blocks.mul(sushiPerBlock()).mul(pool.allocPoint) / totalAllocPoint;
+                uint256 blocks = block.timestamp.sub(pool.lastRewardTime);
+                uint256 sushiReward = blocks.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
                 pool.accSushiPerShare = pool.accSushiPerShare.add((sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply).to128());
             }
-            pool.lastRewardBlock = block.number.to64();
+            pool.lastRewardTime = block.timestamp.to64();
             poolInfo[pid] = pool;
             PoolLPSum[pid] = lpSupply;
-            emit LogUpdatePool(pid, pool.lastRewardBlock, lpSupply, pool.accSushiPerShare);
+            emit LogUpdatePool(pid, pool.lastRewardTime, lpSupply, pool.accSushiPerShare);
         }
     }
 
@@ -584,6 +617,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param amount LP token amount to deposit.
     /// @param to The receiver of `amount` deposit benefit.
     function deposit(uint256 pid, uint256 amount, address to) public {
+        _updateEmissions();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][to];
         PoolLPSum[pid] += amount;
@@ -606,6 +640,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens.
     function withdraw(uint256 pid, uint256 amount, address to) public onlyStartDistributing {
+        _updateEmissions();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         PoolLPSum[pid] -= amount;
@@ -628,6 +663,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param pid The index of the pool. See `poolInfo`.
     /// @param to Receiver of SUSHI rewards.
     function harvest(uint256 pid, address to) public onlyStartDistributing {
+        _updateEmissions();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         int256 accumulatedSushi = int256(user.amount.mul(pool.accSushiPerShare) / ACC_SUSHI_PRECISION);
@@ -654,6 +690,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     /// @param amount LP token amount to withdraw.
     /// @param to Receiver of the LP tokens and SUSHI rewards.
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) public onlyStartDistributing{
+        _updateEmissions();
         PoolInfo memory pool = updatePool(pid);
         UserInfo storage user = userInfo[pid][msg.sender];
         PoolLPSum[pid] -= amount;
