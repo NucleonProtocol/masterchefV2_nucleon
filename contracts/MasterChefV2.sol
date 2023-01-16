@@ -378,7 +378,7 @@ interface IMasterChef {
 
     struct PoolInfo {
         IERC20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. SUSHI to distribute per block.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. SUSHI to distribute per second.
         uint256 lastRewardTime;  // Last block timestamp that SUSHI distribution occurs.
         uint256 accSushiPerShare; // Accumulated SUSHI per share, times 1e12. See below.
     }
@@ -388,7 +388,7 @@ interface IMasterChef {
     function deposit(uint256 _pid, uint256 _amount) external;
 }
 
-/// @notice The (older) MasterChef contract gives out a constant number of SUSHI tokens per block.
+/// @notice The (older) MasterChef contract gives out a constant number of SUSHI tokens per second.
 /// It is the only address with minting rights for SUSHI.
 /// The idea for this MasterChef V2 (MCV2) contract is therefore to be the owner of a dummy token
 /// that is deposited into the MasterChef V1 (MCV1) contract.
@@ -409,7 +409,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
 
     /// @notice Info of each MCV2 pool.
     /// `allocPoint` The amount of allocation points assigned to the pool.
-    /// Also known as the amount of SUSHI to distribute per block.
+    /// Also known as the amount of SUSHI to distribute per second.
     struct PoolInfo {
         uint128 accSushiPerShare;
         uint64 lastRewardTime;
@@ -450,7 +450,6 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     uint256 public totalAllocPoint;
     uint256 public startTimestamp;
     uint256 public startDistributingTimestamp;
-    uint256 private constant MASTERCHEF_SUSHI_PER_BLOCK = 1e20;
     uint256 private constant ACC_SUSHI_PRECISION = 1e12;
 
     modifier onlyStartDistributing() {
@@ -590,8 +589,8 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         uint256 accSushiPerShare = pool.accSushiPerShare;
         uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
         if (block.timestamp > pool.lastRewardTime && lpSupply != 0) {
-            uint256 blocks = block.number.sub(pool.lastRewardTime);
-            uint256 sushiReward = blocks.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
+            uint256 duration = block.timestamp.sub(pool.lastRewardTime);
+            uint256 sushiReward = duration.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
             accSushiPerShare = accSushiPerShare.add(sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply);
         }
         pending = int256(user.amount.mul(accSushiPerShare) / ACC_SUSHI_PRECISION).sub(user.rewardDebt).toUInt256();
@@ -613,8 +612,8 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         if (block.timestamp > pool.lastRewardTime) {
             uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             if (lpSupply > 0) {
-                uint256 blocks = block.timestamp.sub(pool.lastRewardTime);
-                uint256 sushiReward = blocks.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
+                uint256 duration = block.timestamp.sub(pool.lastRewardTime);
+                uint256 sushiReward = duration.mul(rewardsPerSecond).mul(pool.allocPoint) / totalAllocPoint;
                 pool.accSushiPerShare = pool.accSushiPerShare.add((sushiReward.mul(ACC_SUSHI_PRECISION) / lpSupply).to128());
             }
             pool.lastRewardTime = block.timestamp.to64();

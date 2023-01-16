@@ -15,11 +15,11 @@ const ADDRESSES: {
   };
 } = {
   testnet: {
-    NUTWCFX: "",
-    XCFXWCFX: "",
-    NUT: "",
-    NUTWCFXMasterChefV2: "",
-    XCFXWCFXMasterChefV2: "",
+    NUTWCFX: "0x2483948D4819525594E95c0d11C13130E7b33E97",
+    XCFXWCFX: "0x1f406786326d02bA26B4Fb034A2f72400fE84719",
+    NUT: "0xb25763771aCA2FEfCeB78e50640686f6ac5b9984",
+    NUTWCFXMasterChefV2: "0x109fE5e51E8b2c39C89845C5Dd3E1cAFc8Cb362D",
+    XCFXWCFXMasterChefV2: "0x1AfA78297dBFf1F15b0771646609C0c1eEB22061",
   },
   espace: {
     NUTWCFX: "",
@@ -241,21 +241,19 @@ async function main() {
     console.log("✅ Deployed XCFXWCFXMasterChefV2 at:", XCFXWCFXMasterChefV2.address);
     addresses.XCFXWCFXMasterChefV2 = XCFXWCFXMasterChefV2.address;
   }
-  // Add all reward tokens into each pool
-  let NUTTokenInterface = new ethers.Contract(addresses.NUT, ierc20.abi, deployer);
-  let tx = await NUTTokenInterface.transfer(addresses.NUTWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
+  let NUTWCFXTokenInterface = new ethers.Contract(addresses.NUTWCFX, ierc20.abi, deployer);
+  let tx = await NUTWCFXTokenInterface.approve(addresses.NUTWCFXMasterChefV2, ethers.utils.parseEther('1000000'));
   await tx.wait();
-  console.log("✅ Transferred to NUTWCFXMasterChefV2:", tx.hash);
-  tx = await NUTTokenInterface.transfer(addresses.XCFXWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
+  tx = await NUTWCFXMasterChefV2.deposit(0, ethers.utils.parseEther('1000000'), deployer.address);
   await tx.wait();
-  console.log("✅ Transferred to XCFXWCFXMasterChefV2:", tx.hash);
-  // Add LP to each pool
-  tx = await NUTWCFXMasterChefV2.add(1, addresses.NUTWCFX, ZEROADDRESS);
+  console.log("✅ Deposited in NUTWCFXMasterChefV2 at:", tx.hash);
+
+  let XCFXCFXTokenInterface = new ethers.Contract(addresses.XCFXWCFX, ierc20.abi, deployer);
+  tx = await XCFXCFXTokenInterface.approve(addresses.XCFXWCFXMasterChefV2, ethers.utils.parseEther('2000000'));
   await tx.wait();
-  console.log("✅ Added NUT/CFX LP to NUTWCFXMasterChefV2:", tx.hash);
-  tx = await XCFXWCFXMasterChefV2.add(1, addresses.XCFXWCFX, ZEROADDRESS);
+  tx = await XCFXWCFXMasterChefV2.deposit(0, ethers.utils.parseEther('2000000'), deployer.address);
   await tx.wait();
-  console.log("✅ Added XCFX/CFX LP to XCFXWCFXMasterChefV2:", tx.hash);
+  console.log("✅ Deposited in XCFXWCFXMasterChefV2 at:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
