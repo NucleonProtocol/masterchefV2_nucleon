@@ -15,11 +15,11 @@ const ADDRESSES: {
   };
 } = {
   testnet: {
-    NUTWCFX: "0x2483948D4819525594E95c0d11C13130E7b33E97",
-    XCFXWCFX: "0x1f406786326d02bA26B4Fb034A2f72400fE84719",
-    NUT: "0xb25763771aCA2FEfCeB78e50640686f6ac5b9984",
-    NUTWCFXMasterChefV2: "0x109fE5e51E8b2c39C89845C5Dd3E1cAFc8Cb362D",
-    XCFXWCFXMasterChefV2: "0x1AfA78297dBFf1F15b0771646609C0c1eEB22061",
+    NUTWCFX: "0x35ff4988B23Db698E688EE5929bC95e8FBC0BcE1",
+    XCFXWCFX: "0x5D3Bc12D4f91E2395fD5Bbe9C020b6C46fe621C4",
+    NUT: "0x402644e3BaF883430944044Dff6E124fFDcc2b3E",
+    NUTWCFXMasterChefV2: "0x2C324C359CD820620064a564F0DA7858F76bDb61",
+    XCFXWCFXMasterChefV2: "0x0792Fd59872C1861959ceDbFdD15F707B871892A",
   },
   espace: {
     NUTWCFX: "",
@@ -64,7 +64,7 @@ async function main() {
     addresses.XCFXWCFX = XCFXWCFXContract.address;
   }
   if (addresses.NUT !== "") {
-    console.log("👉 Found XCFXWCFX contract at:", addresses.XCFXWCFX);
+    console.log("👉 Found NUT contract at:", addresses.NUT);
   }else{
     // @note Testing ONLY
     const NUTContractFactory  = new ethers.ContractFactory(mockToken.abi, mockToken.bytecode, deployer);

@@ -64,7 +64,7 @@ async function main() {
     addresses.XCFXWCFX = XCFXWCFXContract.address;
   }
   if (addresses.NUT !== "") {
-    console.log("👉 Found XCFXWCFX contract at:", addresses.XCFXWCFX);
+    console.log("👉 Found NUT contract at:", addresses.NUT);
   }else{
     // @note Testing ONLY
     const NUTContractFactory  = new ethers.ContractFactory(mockToken.abi, mockToken.bytecode, deployer);
