@@ -29,9 +29,13 @@ const ADDRESSES: {
     XCFXWCFXMasterChefV2: "",
   },
 };
+// @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
-let masterChefV2: MasterChefV2;
+const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
+let NUTWCFXMasterChefV2: MasterChefV2;
+let XCFXWCFXMasterChefV2: MasterChefV2;
 let mockToken = require(`../test/PPIToken.sol/PPIToken.json`);
+let ierc20 = require(`../test/IERC20.sol/IERC20.json`);
 async function main() {
   const [deployer] = await ethers.getSigners();
   const addresses = ADDRESSES[network.name];
@@ -45,7 +49,7 @@ async function main() {
     const tx = await NUTWCFXContract.mint(deployer.address, '1000000');
     await tx.wait();
     console.log("✅ Deployed mock NUTWCFX at:", NUTWCFXContract.address);
-    addresses.XCFXWCFX = NUTWCFXContract.address;
+    addresses.NUTWCFX = NUTWCFXContract.address;
   }
   if (addresses.XCFXWCFX !== "") {
     console.log("👉 Found XCFXWCFX contract at:", addresses.XCFXWCFX);
@@ -208,35 +212,50 @@ async function main() {
     totalAmount = totalAmount.add(XETWCFXRewardsPerSecond[i]).add(WCFXXCFXRewardsPerSecond[i]);
   }
   totalAmount = totalAmount.mul(ONEMONTH);
-  console.log("👉 Total amount: ", totalAmount);
+  console.log("👉 Total amount: ", totalAmount.toString());
   if (addresses.NUTWCFXMasterChefV2 !== "") {
-    masterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.NUTWCFXMasterChefV2, deployer);
-    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", masterChefV2.address);
+    NUTWCFXMasterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.NUTWCFXMasterChefV2, deployer);
+    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", NUTWCFXMasterChefV2.address);
   }else{
     const masterChefV2Factory  = await ethers.getContractFactory("MasterChefV2", deployer);
     // getting timestamp
     var blockNumBefore = await ethers.provider.getBlockNumber();
     var blockBefore = await ethers.provider.getBlock(blockNumBefore);
     var timestampBefore = blockBefore.timestamp;
-    const masterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
-    await masterChefV2.deployed();
-    console.log("✅ Deployed NUTWCFXMasterChefV2 at:", masterChefV2.address);
-    addresses.NUTWCFXMasterChefV2 = masterChefV2.address;
+    NUTWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
+    await NUTWCFXMasterChefV2.deployed();
+    console.log("✅ Deployed NUTWCFXMasterChefV2 at:", NUTWCFXMasterChefV2.address);
+    addresses.NUTWCFXMasterChefV2 = NUTWCFXMasterChefV2.address;
   }
   if (addresses.XCFXWCFXMasterChefV2 !== "") {
-    masterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.XCFXWCFXMasterChefV2, deployer);
-    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", masterChefV2.address);
+    XCFXWCFXMasterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.XCFXWCFXMasterChefV2, deployer);
+    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", XCFXWCFXMasterChefV2.address);
   }else{
     const masterChefV2Factory  = await ethers.getContractFactory("MasterChefV2", deployer);
     // getting timestamp
     var blockNumBefore = await ethers.provider.getBlockNumber();
     var blockBefore = await ethers.provider.getBlock(blockNumBefore);
     var timestampBefore = blockBefore.timestamp;
-    const masterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
-    await masterChefV2.deployed();
-    console.log("✅ Deployed XCFXWCFXMasterChefV2 at:", masterChefV2.address);
-    addresses.XCFXWCFXMasterChefV2 = masterChefV2.address;
+    XCFXWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, WCFXXCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
+    await XCFXWCFXMasterChefV2.deployed();
+    console.log("✅ Deployed XCFXWCFXMasterChefV2 at:", XCFXWCFXMasterChefV2.address);
+    addresses.XCFXWCFXMasterChefV2 = XCFXWCFXMasterChefV2.address;
   }
+  let NUTTokenInterface = new ethers.Contract(addresses.NUT, ierc20.abi, deployer);
+  // Add all reward tokens into each pool
+  let tx = await NUTTokenInterface.transfer(addresses.NUTWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
+  await tx.wait();
+  console.log("✅ Transferred to NUTWCFXMasterChefV2:", tx.hash);
+  tx = await NUTTokenInterface.transfer(addresses.XCFXWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
+  await tx.wait();
+  console.log("✅ Transferred to XCFXWCFXMasterChefV2:", tx.hash);
+  // Add LP to each pool
+  tx = await NUTWCFXMasterChefV2.add(1, addresses.NUTWCFX, ZEROADDRESS);
+  await tx.wait();
+  console.log("✅ Added NUT/CFX LP to NUTWCFXMasterChefV2:", tx.hash);
+  tx = await XCFXWCFXMasterChefV2.add(1, addresses.XCFXWCFX, ZEROADDRESS);
+  await tx.wait();
+  console.log("✅ Added XCFX/CFX LP to XCFXWCFXMasterChefV2:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

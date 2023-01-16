@@ -512,6 +512,18 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
             updatePool(i);
         }
     }
+
+    /// @notice check reaching limit and transfer rewards
+    function _transferRewards(address _to, uint256 _amount) internal {
+        uint256 transferred = transferredTokens;
+        if (transferred.add(_amount) > maxTransferrableTokens) {
+            _amount = maxTransferrableTokens.sub(transferred);
+        }
+        if (_amount > 0) {
+            transferredTokens = transferred.add(_amount);
+            SUSHI.safeTransfer(_to, _amount);
+        }
+    }
     /// @notice Returns the number of MCV2 pools.
     function poolLength() public view returns (uint256 pools) {
         pools = poolInfo.length;
@@ -673,9 +685,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         user.rewardDebt = accumulatedSushi;
 
         // Interactions
-        if (_pendingSushi != 0) {
-            SUSHI.safeTransfer(to, _pendingSushi);
-        }
+        _transferRewards(to, _pendingSushi);
         
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
@@ -702,7 +712,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         user.amount = user.amount.sub(amount);
         
         // Interactions
-        SUSHI.safeTransfer(to, _pendingSushi);
+        _transferRewards(to, _pendingSushi);
 
         IRewarder _rewarder = rewarder[pid];
         if (address(_rewarder) != address(0)) {
