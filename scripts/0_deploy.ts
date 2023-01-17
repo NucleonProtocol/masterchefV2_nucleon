@@ -75,7 +75,7 @@ async function main() {
   const TIMEOFFSETBASE = 0;
   const TOTALAMOUNTOFMONTHS = 4 * 12; // 4 years
   const startTimeOffset: number[] = new Array(TOTALAMOUNTOFMONTHS);
-  const rawXETWCFXRewardsPerSecond: number[] = new Array(
+  const rawRewardsPerSecondArray: number[] = new Array(
     1114575,
     1048723,
     986761,
@@ -125,22 +125,22 @@ async function main() {
     67683,
     63684,
   );
-  const XETWCFXRewardsPerSecond: BigNumber[] = new Array(TOTALAMOUNTOFMONTHS);
-  XETWCFXRewardsPerSecond[0] = BigNumber.from(rawXETWCFXRewardsPerSecond[0]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
+  const RewardsPerSecondArray: BigNumber[] = new Array(TOTALAMOUNTOFMONTHS);
+  RewardsPerSecondArray[0] = BigNumber.from(rawRewardsPerSecondArray[0]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
   startTimeOffset[0] = TIMEOFFSETBASE;
   // console.log(
   //   "set emission: ",
   //   startTimeOffset[0],
-  //   XETWCFXRewardsPerSecond[0],
+  //   RewardsPerSecondArray[0],
   //   WCFXXCFXRewardsPerSecond[0]
   // );
   for (let i = 1; i < startTimeOffset.length; i++) {
     startTimeOffset[i] = startTimeOffset[i - 1] + ONEMONTH;
-    XETWCFXRewardsPerSecond[i] = BigNumber.from(rawXETWCFXRewardsPerSecond[i]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
+    RewardsPerSecondArray[i] = BigNumber.from(rawRewardsPerSecondArray[i]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
     // console.log(
     //   "set emission: ",
     //   startTimeOffset[i],
-    //   XETWCFXRewardsPerSecond[i],
+    //   RewardsPerSecondArray[i],
     //   WCFXXCFXRewardsPerSecond[i]
     // );
   }
@@ -149,9 +149,9 @@ async function main() {
     console.log(
       "set emission: ",
       startTimeOffset[i],
-      XETWCFXRewardsPerSecond[i].toString()
+      RewardsPerSecondArray[i].toString()
     );
-    totalAmount = totalAmount.add(XETWCFXRewardsPerSecond[i]);
+    totalAmount = totalAmount.add(RewardsPerSecondArray[i]);
   }
   totalAmount = totalAmount.mul(ONEMONTH);
   console.log("👉 Total amount: ", totalAmount.toString());
@@ -164,7 +164,7 @@ async function main() {
     var blockNumBefore = await ethers.provider.getBlockNumber();
     var blockBefore = await ethers.provider.getBlock(blockNumBefore);
     var timestampBefore = blockBefore.timestamp;
-    MasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000));
+    MasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, RewardsPerSecondArray, MAX_SUPPLY.mul(595).div(1000));
     await MasterChefV2.deployed();
     console.log("✅ Deployed MasterChefV2 at:", MasterChefV2.address);
     addresses.MasterChefV2 = MasterChefV2.address;
