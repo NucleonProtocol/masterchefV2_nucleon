@@ -11,7 +11,6 @@ const ADDRESSES: {
     XCFXWCFX: string;
     NUT: string;
     NUTWCFXMasterChefV2: string;
-    XCFXWCFXMasterChefV2: string;
   };
 } = {
   testnet: {
@@ -19,21 +18,18 @@ const ADDRESSES: {
     XCFXWCFX: "",
     NUT: "",
     NUTWCFXMasterChefV2: "",
-    XCFXWCFXMasterChefV2: "",
   },
   espace: {
     NUTWCFX: "",
     XCFXWCFX: "",
     NUT: "",
     NUTWCFXMasterChefV2: "",
-    XCFXWCFXMasterChefV2: "",
   },
 };
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
 let NUTWCFXMasterChefV2: MasterChefV2;
-let XCFXWCFXMasterChefV2: MasterChefV2;
 let mockToken = require(`../test/PPIToken.sol/PPIToken.json`);
 let ierc20 = require(`../test/IERC20.sol/IERC20.json`);
 async function main() {
@@ -80,109 +76,57 @@ async function main() {
   const TOTALAMOUNTOFMONTHS = 4 * 12; // 4 years
   const startTimeOffset: number[] = new Array(TOTALAMOUNTOFMONTHS);
   const rawXETWCFXRewardsPerSecond: number[] = new Array(
-    445830,
-    419489,
-    394704,
-    371384,
-    349442,
-    328796,
-    309370,
-    291091,
-    273893,
-    257711,
-    242484,
-    228158,
-    214678,
-    201994,
-    190060,
-    178830,
-    168265,
-    158323,
-    148969,
-    140167,
-    131886,
-    124094,
-    116762,
-    109863,
-    103372,
-    97265,
-    91518,
-    86111,
-    81023,
-    76236,
-    71732,
-    67494,
-    63506,
-    59754,
-    56224,
-    52902,
-    49776,
-    46835,
-    44068,
-    41464,
-    39015,
-    36710,
-    34541,
-    32500,
-    30580,
-    28773,
-    27073,
-    25473,
-  );
-  const rawWCFXXCFXRewardsPerSecond: number[] = new Array(
-    668745,
-    629234,
-    592057,
-    557076,
-    524163,
-    493194,
-    464055,
-    436637,
-    410839,
-    386566,
-    363727,
-    342237,
-    322016,
-    302991,
-    285089,
-    268245,
-    252397,
-    237485,
-    223453,
-    210251,
-    197829,
-    186141,
-    175143,
-    164795,
-    155059,
-    145897,
-    137277,
-    129167,
-    121535,
-    114354,
-    107598,
-    101241,
-    95259,
-    89631,
-    84335,
-    79353,
-    74664,
-    70253,
-    66102,
-    62197,
-    58522,
-    55064,
-    51811,
-    48750,
-    45870,
-    43159,
-    40610,
-    38210,
+    1114575,
+    1048723,
+    986761,
+    928461,
+    873605,
+    821990,
+    773425,
+    727729,
+    684732,
+    644277,
+    606211,
+    570394,
+    536694,
+    504985,
+    475149,
+    447076,
+    420661,
+    395808,
+    372422,
+    350418,
+    329715,
+    310234,
+    291905,
+    274658,
+    258431,
+    243162,
+    228795,
+    215278,
+    202558,
+    190591,
+    179330,
+    168735,
+    158765,
+    149385,
+    140559,
+    132255,
+    124441,
+    117088,
+    110170,
+    103661,
+    97537,
+    91774,
+    86352,
+    81250,
+    76449,
+    71932,
+    67683,
+    63684,
   );
   const XETWCFXRewardsPerSecond: BigNumber[] = new Array(TOTALAMOUNTOFMONTHS);
-  const WCFXXCFXRewardsPerSecond: BigNumber[] = new Array(TOTALAMOUNTOFMONTHS);
   XETWCFXRewardsPerSecond[0] = BigNumber.from(rawXETWCFXRewardsPerSecond[0]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
-  WCFXXCFXRewardsPerSecond[0] = BigNumber.from(rawWCFXXCFXRewardsPerSecond[0]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
   startTimeOffset[0] = TIMEOFFSETBASE;
   // console.log(
   //   "set emission: ",
@@ -193,7 +137,6 @@ async function main() {
   for (let i = 1; i < startTimeOffset.length; i++) {
     startTimeOffset[i] = startTimeOffset[i - 1] + ONEMONTH;
     XETWCFXRewardsPerSecond[i] = BigNumber.from(rawXETWCFXRewardsPerSecond[i]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
-    WCFXXCFXRewardsPerSecond[i] = BigNumber.from(rawWCFXXCFXRewardsPerSecond[i]).mul(ethers.utils.parseEther("1")).div(100).div(ONEMONTH);
     // console.log(
     //   "set emission: ",
     //   startTimeOffset[i],
@@ -206,10 +149,9 @@ async function main() {
     console.log(
       "set emission: ",
       startTimeOffset[i],
-      XETWCFXRewardsPerSecond[i].toString(),
-      WCFXXCFXRewardsPerSecond[i].toString()
+      XETWCFXRewardsPerSecond[i].toString()
     );
-    totalAmount = totalAmount.add(XETWCFXRewardsPerSecond[i]).add(WCFXXCFXRewardsPerSecond[i]);
+    totalAmount = totalAmount.add(XETWCFXRewardsPerSecond[i]);
   }
   totalAmount = totalAmount.mul(ONEMONTH);
   console.log("👉 Total amount: ", totalAmount.toString());
@@ -222,40 +164,23 @@ async function main() {
     var blockNumBefore = await ethers.provider.getBlockNumber();
     var blockBefore = await ethers.provider.getBlock(blockNumBefore);
     var timestampBefore = blockBefore.timestamp;
-    NUTWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
+    NUTWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000));
     await NUTWCFXMasterChefV2.deployed();
     console.log("✅ Deployed NUTWCFXMasterChefV2 at:", NUTWCFXMasterChefV2.address);
     addresses.NUTWCFXMasterChefV2 = NUTWCFXMasterChefV2.address;
   }
-  if (addresses.XCFXWCFXMasterChefV2 !== "") {
-    XCFXWCFXMasterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.XCFXWCFXMasterChefV2, deployer);
-    console.log("👉 Found XCFXWCFX MasterChefV2 contract at:", XCFXWCFXMasterChefV2.address);
-  }else{
-    const masterChefV2Factory  = await ethers.getContractFactory("MasterChefV2", deployer);
-    // getting timestamp
-    var blockNumBefore = await ethers.provider.getBlockNumber();
-    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    var timestampBefore = blockBefore.timestamp;
-    XCFXWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, WCFXXCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
-    await XCFXWCFXMasterChefV2.deployed();
-    console.log("✅ Deployed XCFXWCFXMasterChefV2 at:", XCFXWCFXMasterChefV2.address);
-    addresses.XCFXWCFXMasterChefV2 = XCFXWCFXMasterChefV2.address;
-  }
   // Add all reward tokens into each pool
   let NUTTokenInterface = new ethers.Contract(addresses.NUT, ierc20.abi, deployer);
-  let tx = await NUTTokenInterface.transfer(addresses.NUTWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(4).div(10));
+  let tx = await NUTTokenInterface.transfer(addresses.NUTWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000));
   await tx.wait();
   console.log("✅ Transferred to NUTWCFXMasterChefV2:", tx.hash);
-  tx = await NUTTokenInterface.transfer(addresses.XCFXWCFXMasterChefV2, MAX_SUPPLY.mul(595).div(1000).mul(6).div(10));
-  await tx.wait();
-  console.log("✅ Transferred to XCFXWCFXMasterChefV2:", tx.hash);
   // Add LP to each pool
-  tx = await NUTWCFXMasterChefV2.add(1, addresses.NUTWCFX, ZEROADDRESS);
+  tx = await NUTWCFXMasterChefV2.add(4, addresses.NUTWCFX, ZEROADDRESS);
   await tx.wait();
   console.log("✅ Added NUT/CFX LP to NUTWCFXMasterChefV2:", tx.hash);
-  tx = await XCFXWCFXMasterChefV2.add(1, addresses.XCFXWCFX, ZEROADDRESS);
+  tx = await NUTWCFXMasterChefV2.add(6, addresses.XCFXWCFX, ZEROADDRESS);
   await tx.wait();
-  console.log("✅ Added XCFX/CFX LP to XCFXWCFXMasterChefV2:", tx.hash);
+  console.log("✅ Added XCFX/CFX LP to NUTWCFXMasterChefV2:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
