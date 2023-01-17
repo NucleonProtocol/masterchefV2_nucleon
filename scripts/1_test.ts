@@ -10,26 +10,26 @@ const ADDRESSES: {
     NUTWCFX: string;
     XCFXWCFX: string;
     NUT: string;
-    NUTWCFXMasterChefV2: string;
+    MasterChefV2: string;
   };
 } = {
   testnet: {
-    NUTWCFX: "0xE8DfebD58Dd352706F0a779Fa5d04533c6032B31",
-    XCFXWCFX: "0x1fcfd179d2aDFDF81835f6C770222A2E89CB8e3B",
-    NUT: "0x255F65BA992650484de07dd80aFB40bEb56fc951",
-    NUTWCFXMasterChefV2: "0x432eb77A2F95972a2F5B78c3AFc3FEAA17F3f687",
+    NUTWCFX: "0xa39B6cB049A20AD39467734f18A499d53A15D1e4",
+    XCFXWCFX: "0x93654706FA81508f48D5B98f16B9ed9829bCB37d",
+    NUT: "0x30E5C8c5716682fFFC13b69E59369e0c7416c38f",
+    MasterChefV2: "0x86E32085ebe5874990D51Df387a4D206F8f0b67E",
   },
   espace: {
     NUTWCFX: "",
     XCFXWCFX: "",
     NUT: "",
-    NUTWCFXMasterChefV2: "",
+    MasterChefV2: "",
   },
 };
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
-let NUTWCFXMasterChefV2: MasterChefV2;
+let MasterChefV2: MasterChefV2;
 let mockToken = require(`../test/PPIToken.sol/PPIToken.json`);
 let ierc20 = require(`../test/IERC20.sol/IERC20.json`);
 async function main() {
@@ -155,33 +155,33 @@ async function main() {
   }
   totalAmount = totalAmount.mul(ONEMONTH);
   console.log("👉 Total amount: ", totalAmount.toString());
-  if (addresses.NUTWCFXMasterChefV2 !== "") {
-    NUTWCFXMasterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.NUTWCFXMasterChefV2, deployer);
-    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", NUTWCFXMasterChefV2.address);
+  if (addresses.MasterChefV2 !== "") {
+    MasterChefV2 = await ethers.getContractAt("MasterChefV2", addresses.MasterChefV2, deployer);
+    console.log("👉 Found NUTWCFX MasterChefV2 contract at:", MasterChefV2.address);
   }else{
     const masterChefV2Factory  = await ethers.getContractFactory("MasterChefV2", deployer);
     // getting timestamp
     var blockNumBefore = await ethers.provider.getBlockNumber();
     var blockBefore = await ethers.provider.getBlock(blockNumBefore);
     var timestampBefore = blockBefore.timestamp;
-    NUTWCFXMasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000));
-    await NUTWCFXMasterChefV2.deployed();
-    console.log("✅ Deployed NUTWCFXMasterChefV2 at:", NUTWCFXMasterChefV2.address);
-    addresses.NUTWCFXMasterChefV2 = NUTWCFXMasterChefV2.address;
+    MasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, XETWCFXRewardsPerSecond, MAX_SUPPLY.mul(595).div(1000));
+    await MasterChefV2.deployed();
+    console.log("✅ Deployed MasterChefV2 at:", MasterChefV2.address);
+    addresses.MasterChefV2 = MasterChefV2.address;
   }
   let NUTWCFXTokenInterface = new ethers.Contract(addresses.NUTWCFX, ierc20.abi, deployer);
-  let tx = await NUTWCFXTokenInterface.approve(addresses.NUTWCFXMasterChefV2, ethers.utils.parseEther('1000000'));
+  let tx = await NUTWCFXTokenInterface.approve(addresses.MasterChefV2, ethers.utils.parseEther('1000000'));
   await tx.wait();
-  tx = await NUTWCFXMasterChefV2.deposit(0, ethers.utils.parseEther('1000000'), deployer.address);
+  tx = await MasterChefV2.deposit(0, ethers.utils.parseEther('1000000'), deployer.address);
   await tx.wait();
-  console.log("✅ Deposited in NUTWCFXMasterChefV2 at:", tx.hash);
+  console.log("✅ Deposited in MasterChefV2 at:", tx.hash);
 
   let XCFXCFXTokenInterface = new ethers.Contract(addresses.XCFXWCFX, ierc20.abi, deployer);
-  tx = await XCFXCFXTokenInterface.approve(addresses.NUTWCFXMasterChefV2, ethers.utils.parseEther('2000000'));
+  tx = await XCFXCFXTokenInterface.approve(addresses.MasterChefV2, ethers.utils.parseEther('1000000'));
   await tx.wait();
-  tx = await NUTWCFXMasterChefV2.deposit(1, ethers.utils.parseEther('1000000'), deployer.address);
+  tx = await MasterChefV2.deposit(1, ethers.utils.parseEther('1000000'), deployer.address);
   await tx.wait();
-  console.log("✅ Deposited in NUTWCFXMasterChefV2 at:", tx.hash);
+  console.log("✅ Deposited in MasterChefV2 at:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
