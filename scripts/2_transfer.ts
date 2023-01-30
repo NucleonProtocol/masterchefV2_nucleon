@@ -20,15 +20,15 @@ const ADDRESSES: {
   };
 } = {
   testnet: {
-    nucleon_token: "",
-    systemdistribute: "",
-    systemdistributeAdmin: "",
-    masterChefV2: "",
-    team_70: "",
-    team_30: "",
-    marketing: "",
-    treasury: "",
-    DAO: "",
+    nucleon_token: "0x1e9890180DC264670BC086ac2084bB3B700fb051",
+    systemdistribute: "0x1455c1081AC835Ce4EF1989C11A3afC811928347",
+    systemdistributeAdmin: "0xad085E56F5673FD994453bbCdfe6828aa659Cb0d",
+    masterChefV2: "0x3e45741f0c46Cad7AA1834e31F3bD739555d4760",
+    team_70: "0x1a735B9F3555d2f121999C1C1C6057e0afF1a4F9",
+    team_30: "0x1a735B9F3555d2f121999C1C1C6057e0afF1a4F9",
+    marketing: "0xe0493ddccfbc2c656ccafe8518dc631a76888ef8", //multisig for testing
+    treasury: "0xad085E56F5673FD994453bbCdfe6828aa659Cb0d",
+    DAO: "0x23A84653C261E584428a712144a0a4a77628dB20",
   },
   espace: {
     nucleon_token: "",
@@ -45,7 +45,6 @@ const ADDRESSES: {
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
-const TRANSFERINTERVAL = 2592000;//86,400 1 days;2,592,000 30 days
 const TOTALAMOUNT_masterChefV2 = ethers.utils.parseEther("178500");//@note deployer sent it once deployed NUT
 const AMOUNT_team_70 = ethers.utils.parseEther("30000").mul(7).div(10).div(48);
 const AMOUNT_team_30 = ethers.utils.parseEther("30000").mul(3).div(10).div(48);
@@ -79,15 +78,14 @@ async function main() {
     console.log("👉 Found Systemdistribute contract at:", Systemdistribute.address);
   }else{
     const SystemdistributeFactory  = await ethers.getContractFactory("systemdistribute", deployer);
-    // getting timestamp
-    var blockNumBefore = await ethers.provider.getBlockNumber();
-    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    var timestampBefore = blockBefore.timestamp;
-    Systemdistribute = await SystemdistributeFactory.deploy(timestampBefore - TRANSFERINTERVAL);
+    Systemdistribute = await SystemdistributeFactory.deploy(0);
     await Systemdistribute.deployed();
     console.log("✅ Deployed Systemdistribute at:", Systemdistribute.address);
     addresses.systemdistribute = Systemdistribute.address;
   }
+  var tx = await Systemdistribute.transferERC20byAmount(addresses.nucleon_token);
+  await tx.wait();
+  console.log("✅ transferERC20byAmount:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

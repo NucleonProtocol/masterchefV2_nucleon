@@ -20,15 +20,15 @@ const ADDRESSES: {
   };
 } = {
   testnet: {
-    nucleon_token: "",
-    systemdistribute: "",
-    systemdistributeAdmin: "",
-    masterChefV2: "",
-    team_70: "",
-    team_30: "",
-    marketing: "",
-    treasury: "",
-    DAO: "",
+    nucleon_token: "0x1e9890180DC264670BC086ac2084bB3B700fb051",
+    systemdistribute: "0x1455c1081AC835Ce4EF1989C11A3afC811928347",
+    systemdistributeAdmin: "0xad085E56F5673FD994453bbCdfe6828aa659Cb0d",
+    masterChefV2: "0x3e45741f0c46Cad7AA1834e31F3bD739555d4760",
+    team_70: "0x1a735B9F3555d2f121999C1C1C6057e0afF1a4F9",
+    team_30: "0x1a735B9F3555d2f121999C1C1C6057e0afF1a4F9",
+    marketing: "0xe0493ddccfbc2c656ccafe8518dc631a76888ef8", //multisig for testing
+    treasury: "0xad085E56F5673FD994453bbCdfe6828aa659Cb0d",
+    DAO: "0x23A84653C261E584428a712144a0a4a77628dB20",
   },
   espace: {
     nucleon_token: "",
@@ -45,7 +45,6 @@ const ADDRESSES: {
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
-const TRANSFERINTERVAL = 2592000;//86,400 1 days;2,592,000 30 days
 const TOTALAMOUNT_masterChefV2 = ethers.utils.parseEther("178500");//@note deployer sent it once deployed NUT
 const AMOUNT_team_70 = ethers.utils.parseEther("30000").mul(7).div(10).div(48);
 const AMOUNT_team_30 = ethers.utils.parseEther("30000").mul(3).div(10).div(48);
@@ -60,7 +59,7 @@ let ierc20 = require(`../test/IERC20.sol/IERC20.json`);
 async function main() {
   const [deployer] = await ethers.getSigners();
   const addresses = ADDRESSES[network.name];
-  let amount_array = [AMOUNT_team_70, AMOUNT_team_30, AMOUNT_marketing, AMOUNT_marketing, AMOUNT_treasury, AMOUNT_DAO];
+  let amount_array = [AMOUNT_team_70, AMOUNT_team_30, AMOUNT_marketing, AMOUNT_treasury, AMOUNT_DAO];
   let distributed_array = [addresses.team_70, addresses.team_30, addresses.marketing, addresses.treasury, addresses.DAO];
   if (addresses.nucleon_token !== "") {
     Nucleon_token = await ethers.getContractAt("nucleon_token", addresses.nucleon_token, deployer);
@@ -79,15 +78,34 @@ async function main() {
     console.log("👉 Found Systemdistribute contract at:", Systemdistribute.address);
   }else{
     const SystemdistributeFactory  = await ethers.getContractFactory("systemdistribute", deployer);
-    // getting timestamp
-    var blockNumBefore = await ethers.provider.getBlockNumber();
-    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    var timestampBefore = blockBefore.timestamp;
-    Systemdistribute = await SystemdistributeFactory.deploy(timestampBefore - TRANSFERINTERVAL);
+    Systemdistribute = await SystemdistributeFactory.deploy(0);
     await Systemdistribute.deployed();
     console.log("✅ Deployed Systemdistribute at:", Systemdistribute.address);
     addresses.systemdistribute = Systemdistribute.address;
   }
+  // transfer to masterchef
+  var tx = await Nucleon_token.transfer(addresses.masterChefV2, TOTALAMOUNT_masterChefV2);
+  await tx.wait();
+  console.log("✅ transfer to masterChefV2:", tx.hash);
+  var balance = await Nucleon_token.balanceOf(addresses.masterChefV2);
+  console.log("👉 masterChefV2 balance", balance.toString());
+
+  // transfer systemds
+  var tx = await Nucleon_token.transfer(addresses.systemdistribute, TOTALAMOUNT_systemdistribute);
+  await tx.wait();
+  console.log("✅ transfer to systemdistribute:", tx.hash);
+  var balance = await Nucleon_token.balanceOf(addresses.systemdistribute);
+  console.log("👉 systemdistribute balance", balance.toString());
+
+  var tx = await Systemdistribute._setAccounts(amount_array, distributed_array);
+  await tx.wait();
+  console.log("✅ _setAccounts:", tx.hash);
+  var tx = await Systemdistribute._setAdmin(addresses.systemdistributeAdmin);
+  await tx.wait();
+  console.log("✅ _setAdmin:", tx.hash);
+  var tx = await Systemdistribute._setallow(1080);
+  await tx.wait();
+  console.log("✅ _setallow to 1080:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

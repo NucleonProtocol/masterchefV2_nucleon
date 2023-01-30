@@ -3,7 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
 dotenv.config();
 const config: HardhatUserConfig = {
-  solidity: "0.6.12",
+  solidity: "0.8.17",
   networks: {
     hardhat: {
       blockGasLimit: 60000000,
