@@ -20,15 +20,17 @@ const ADDRESSES: {
     MasterChefV2: "",
   },
   espace: {
-    NUTWCFX: "",
-    XCFXWCFX: "",
-    NUT: "",
-    MasterChefV2: "",
+    NUTWCFX: "0xd9d5748CB36a81FE58F91844F4A0412502FD3105",
+    XCFXWCFX: "0x949b78eF2c8d6979098E195b08F27FF99cb20448",
+    NUT: "0xFE197E7968807B311D476915DB585831B43A7E3b",
+    MasterChefV2: "0xECED26633B5C2D7124B5eae794c9c32a8B8e7df2",
   },
 };
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
+const startDistributingTimestamp = 1675861200;
+const startTimestamp = 1675170000;
 let MasterChefV2: MasterChefV2;
 let mockToken = require(`../test/PPIToken.sol/PPIToken.json`);
 let ierc20 = require(`../test/IERC20.sol/IERC20.json`);
@@ -160,11 +162,7 @@ async function main() {
     console.log("👉 Found NUTWCFX MasterChefV2 contract at:", MasterChefV2.address);
   }else{
     const masterChefV2Factory  = await ethers.getContractFactory("MasterChefV2", deployer);
-    // getting timestamp
-    var blockNumBefore = await ethers.provider.getBlockNumber();
-    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
-    var timestampBefore = blockBefore.timestamp;
-    MasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, timestampBefore, startTimeOffset, RewardsPerSecondArray, MAX_SUPPLY.mul(595).div(1000));
+    MasterChefV2 = await masterChefV2Factory.deploy(addresses.NUT, startTimestamp, startDistributingTimestamp, startTimeOffset, RewardsPerSecondArray, MAX_SUPPLY.mul(595).div(1000));
     await MasterChefV2.deployed();
     console.log("✅ Deployed MasterChefV2 at:", MasterChefV2.address);
     addresses.MasterChefV2 = MasterChefV2.address;

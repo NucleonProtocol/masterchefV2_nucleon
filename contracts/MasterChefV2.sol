@@ -475,6 +475,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
     constructor( 
         IERC20 _sushi,
         uint256 _startTimestamp, 
+        uint256 _startDistributingTimestamp,
         uint128[] memory _startTimeOffset,
         uint128[] memory _rewardsPerSecond,
         uint256 _maxTransferrableTokens
@@ -482,7 +483,7 @@ contract MasterChefV2 is BoringOwnable, BoringBatchable {
         // MASTER_CHEF = _MASTER_CHEF;
         SUSHI = _sushi;
         startTimestamp = _startTimestamp;
-        startDistributingTimestamp = _startTimestamp + 604800;
+        startDistributingTimestamp = _startDistributingTimestamp;
         // MASTER_PID = _MASTER_PID;
         uint256 length = _startTimeOffset.length;
         for (uint256 i = length - 1; i + 1 != 0; i--) {
