@@ -31,21 +31,21 @@ const ADDRESSES: {
     DAO: "0x23A84653C261E584428a712144a0a4a77628dB20",
   },
   espace: {
-    nucleon_token: "",
-    systemdistribute: "",
-    systemdistributeAdmin: "",
-    masterChefV2: "",
-    team_70: "",
-    team_30: "",
-    marketing: "",
-    treasury: "",
-    DAO: "",
+    nucleon_token: "0xFE197E7968807B311D476915DB585831B43A7E3b",
+    systemdistribute: "0xA18936C68BDe988F1B0CB6a45311b6Af0f55f4a7",
+    systemdistributeAdmin: "0x8BB89e5b2D8c8A17aB5c2c3148dF86297A2Fd05B",
+    masterChefV2: "0xECED26633B5C2D7124B5eae794c9c32a8B8e7df2",
+    team_70: "0x5FDddEF203f70c971b70e65Ad1db38acDCF151ad",
+    team_30: "0x3cc2318A880A961c6859e42aB438b68AEcd15d0b",
+    marketing: "0xea41549df7196805cd9bb30e790e86389f4c13af",
+    treasury: "0xbeb910ae81e3dd1622633660d47443ae37894f75",
+    DAO: "0xdfbf3c11024023262a3f41cf33175357a136ddb0",
   },
 };
 // @note Here is total supply of NUT token
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
-const TOTALAMOUNT_masterChefV2 = ethers.utils.parseEther("178500");//@note deployer sent it once deployed NUT
+// const TOTALAMOUNT_masterChefV2 = ethers.utils.parseEther("178500");
 const AMOUNT_team_70 = ethers.utils.parseEther("30000").mul(7).div(10).div(48);
 const AMOUNT_team_30 = ethers.utils.parseEther("30000").mul(3).div(10).div(48);
 const AMOUNT_marketing = ethers.utils.parseEther("30000").div(48);
@@ -83,10 +83,10 @@ async function main() {
     console.log("✅ Deployed Systemdistribute at:", Systemdistribute.address);
     addresses.systemdistribute = Systemdistribute.address;
   }
-  // transfer to masterchef
-  var tx = await Nucleon_token.transfer(addresses.masterChefV2, TOTALAMOUNT_masterChefV2);
-  await tx.wait();
-  console.log("✅ transfer to masterChefV2:", tx.hash);
+  // transfer to masterchef @note Already transferred no need to do it
+  // var tx = await Nucleon_token.transfer(addresses.masterChefV2, TOTALAMOUNT_masterChefV2);
+  // await tx.wait();
+  // console.log("✅ transfer to masterChefV2:", tx.hash);
   var balance = await Nucleon_token.balanceOf(addresses.masterChefV2);
   console.log("👉 masterChefV2 balance", balance.toString());
 
