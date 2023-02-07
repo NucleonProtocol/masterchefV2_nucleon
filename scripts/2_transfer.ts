@@ -78,7 +78,11 @@ async function main() {
     console.log("👉 Found Systemdistribute contract at:", Systemdistribute.address);
   }else{
     const SystemdistributeFactory  = await ethers.getContractFactory("systemdistribute", deployer);
-    Systemdistribute = await SystemdistributeFactory.deploy(0);
+    // getting timestamp
+    var blockNumBefore = await ethers.provider.getBlockNumber();
+    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    var timestampBefore = blockBefore.timestamp;
+    Systemdistribute = await SystemdistributeFactory.deploy(timestampBefore - TRANSFERINTERVAL);
     await Systemdistribute.deployed();
     console.log("✅ Deployed Systemdistribute at:", Systemdistribute.address);
     addresses.systemdistribute = Systemdistribute.address;

@@ -46,11 +46,11 @@ const ADDRESSES: {
 const MAX_SUPPLY = ethers.utils.parseEther("300000");
 const ZEROADDRESS = '0x0000000000000000000000000000000000000000';
 // const TOTALAMOUNT_masterChefV2 = ethers.utils.parseEther("178500");
-const AMOUNT_team_70 = ethers.utils.parseEther("30000").mul(7).div(10).div(48);
-const AMOUNT_team_30 = ethers.utils.parseEther("30000").mul(3).div(10).div(48);
-const AMOUNT_marketing = ethers.utils.parseEther("30000").div(48);
-const AMOUNT_treasury = ethers.utils.parseEther("30000").div(48);
-const AMOUNT_DAO = ethers.utils.parseEther("27000").div(48);
+const AMOUNT_team_70 = ethers.utils.parseEther("2107553").div(1000);
+const AMOUNT_team_30 = ethers.utils.parseEther("903237").div(1000);
+const AMOUNT_marketing = ethers.utils.parseEther("301079").div(100);
+const AMOUNT_treasury = ethers.utils.parseEther("301079").div(100);
+const AMOUNT_DAO = ethers.utils.parseEther("270971").div(100);
 const TOTALAMOUNT_systemdistribute = ethers.utils.parseEther("117000");
 let Nucleon_token: Nucleon_token;
 let Systemdistribute: Systemdistribute;
@@ -78,7 +78,11 @@ async function main() {
     console.log("👉 Found Systemdistribute contract at:", Systemdistribute.address);
   }else{
     const SystemdistributeFactory  = await ethers.getContractFactory("systemdistribute", deployer);
-    Systemdistribute = await SystemdistributeFactory.deploy(0);
+    // getting timestamp
+    var blockNumBefore = await ethers.provider.getBlockNumber();
+    var blockBefore = await ethers.provider.getBlock(blockNumBefore);
+    var timestampBefore = blockBefore.timestamp;
+    Systemdistribute = await SystemdistributeFactory.deploy(timestampBefore - TRANSFERINTERVAL);
     await Systemdistribute.deployed();
     console.log("✅ Deployed Systemdistribute at:", Systemdistribute.address);
     addresses.systemdistribute = Systemdistribute.address;
@@ -91,21 +95,21 @@ async function main() {
   console.log("👉 masterChefV2 balance", balance.toString());
 
   // transfer systemds
-  var tx = await Nucleon_token.transfer(addresses.systemdistribute, TOTALAMOUNT_systemdistribute);
-  await tx.wait();
-  console.log("✅ transfer to systemdistribute:", tx.hash);
+  // var tx = await Nucleon_token.transfer(addresses.systemdistribute, TOTALAMOUNT_systemdistribute);
+  // await tx.wait();
+  // console.log("✅ transfer to systemdistribute:", tx.hash);
   var balance = await Nucleon_token.balanceOf(addresses.systemdistribute);
   console.log("👉 systemdistribute balance", balance.toString());
 
   var tx = await Systemdistribute._setAccounts(amount_array, distributed_array);
   await tx.wait();
   console.log("✅ _setAccounts:", tx.hash);
-  var tx = await Systemdistribute._setAdmin(addresses.systemdistributeAdmin);
-  await tx.wait();
-  console.log("✅ _setAdmin:", tx.hash);
-  var tx = await Systemdistribute._setallow(1080);
-  await tx.wait();
-  console.log("✅ _setallow to 1080:", tx.hash);
+  // var tx = await Systemdistribute._setAdmin(addresses.systemdistributeAdmin);
+  // await tx.wait();
+  // console.log("✅ _setAdmin:", tx.hash);
+  // var tx = await Systemdistribute._setallow(1080);
+  // await tx.wait();
+  // console.log("✅ _setallow to 1080:", tx.hash);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
